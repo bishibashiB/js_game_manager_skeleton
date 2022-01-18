@@ -1,0 +1,166 @@
+<html>
+	<head>
+		<title>Controller</title>
+		<meta charset="utf-8">
+		<link rel="stylesheet" type="text/css" href="/stylesheet.css">
+		<link rel="shortcut icon" href="/favicon.ico">
+		<meta name="description" content="Web controller for LED table">
+		<meta name="author" content="Reimund König">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta name="keywords" lang="de" content="virtual, controller, joystick">
+	</head>
+	<body>
+		<div id="login">
+			<div class="loginInformation">
+				<div class="loginInformationText">
+					<section id="informationText"></section>
+				</div>
+			</div>
+			<form action="">
+				<input type="text" autocomplete="off" class="inputLogin" id="new_player" maxlength="25" placeholder="Username"><br>
+				<input class="btn btnLogin btnBlue" type="submit" value="submit">
+			</form>
+		</div>
+		<div id="controller">
+			<section id="main">
+				<div class="playInformation">
+					<div class="playInformationText">
+					<h2>How to use touch control</h2>
+					<p>Put a finger finger on the touch display and move to the right or to the left for a<br> single RELATIVE direction change.<br> Release your finger and <br>REPEAT.</p>
+				</div></div>
+			</section>
+		</div>
+		<script src="/virtualjoystick.js"></script>
+		<script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+		<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+		<script>
+			console.log("touchscreen is", VirtualJoystick.touchScreenAvailable() ? "available" : "not available");
+			var username = "";
+			var socket = io();
+			var socket_id = "";
+			console.log(socket);
+			$(function () {
+				$('form').submit(function(){
+					username = $('#new_player').val();
+					console.log("Send Message: " + username);
+					socket.emit("new_player", username);
+					return false;
+				});
+				socket.on('connected', function(call_socket_id) {
+					if(socket_id == "") {
+						socket_id = call_socket_id;
+						console.log("Connected to Table with id: " + call_socket_id)
+						if(username != "") {
+							console.log("Reconnected user " + username + " to Table with id: " + call_socket_id)
+							document.getElementById("informationText").innerHTML = "Reconnect...";
+							socket.emit("reconnect_player", username);
+						}
+					}
+				});
+				socket.on('ready', function(call_socket_id, queuePos){
+					if(socket_id != call_socket_id) { return; }
+					console.log("Player " + socket_id + " is ready");
+					document.getElementById("informationText").innerHTML = "Queue Pos: " + queuePos;
+					if(queuePos > 0) {
+						document.getElementById("controller").style.display = "none";
+						document.getElementById("login").style.display = "block";
+						setTimeout(function() { socket.emit("start"); }, 1000);
+					} else {
+						document.getElementById("controller").style.display = "block";
+						document.getElementById("login").style.display = "none";
+					}
+				});
+				socket.on('changeMaxPlayer', () => {
+					console.log("changeMaxPlayer");
+					socket.emit("reconnect_player", username);
+				});
+				socket.on('disconnect', () => {
+					document.getElementById("controller").style.display = "none";
+					document.getElementById("login").style.display = "block";
+					document.getElementById("informationText").innerHTML = "Disconnected";
+					socket_id = "";
+				});
+			});
+		</script>
+		<script>
+			var positionRight = "";
+			var lastPositionRight = "";
+
+			var joystick_right	= new VirtualJoystick({
+				container	: document.getElementById('main'),
+				mouseSupport	: false,
+				strokeStyle	: 'cyan',
+				limitStickTravel: true,
+				stickRadius	: 120
+			});
+
+			joystick_right.addEventListener('touchStartValidation', function(event){
+				var touch	= event.changedTouches[0];
+				if( touch.pageX < window.innerWidth/2 )	return false;
+				return true
+			});
+
+			joystick_right.addEventListener('touchStart', function(event){
+				socket.emit("right", "push", username);
+				positionRight = "";
+				lastPositionRight = "";
+			})
+
+			joystick_right.addEventListener('touchMove', function(event){
+				if(positionRight == lastPositionRight) { return; }
+				lastPositionRight = positionRight;
+				socket.emit("right", positionRight, username);
+			})
+			joystick_right.addEventListener('touchEnd', function(event){
+				socket.emit("right", "release", username);
+			})
+
+			var positionLeft = "";
+			var lastPositionLeft = "";
+
+			var joystick_left	= new VirtualJoystick({
+				container	:	document.getElementById('main'),
+				mouseSupport	: false,
+				strokeStyle	: 'orange',
+				limitStickTravel: true,
+				stickRadius	: 120
+			});
+
+			joystick_left.addEventListener('touchStartValidation', function(event){
+				var touch	= event.changedTouches[0];
+				if( touch.pageX >= window.innerWidth/2 )	return false;
+				return true
+			});
+
+			joystick_left.addEventListener('touchStart', function(event){
+				socket.emit("left", "push", username);
+				positionLeft = "";
+				lastPositionLeft = "";
+			})
+
+			joystick_left.addEventListener('touchMove', function(event){
+				if(positionLeft == lastPositionLeft) { return; }
+				lastPositionLeft = positionLeft;
+				socket.emit("left", positionLeft, username);
+			})
+
+			joystick_left.addEventListener('touchEnd', function(event){
+				socket.emit("left", "release", username);
+			})
+
+			setInterval(function(){
+				if(joystick_left.up()) 			{ positionLeft = "up"; 		}
+				else if(joystick_left.down()) 	{ positionLeft = "down"; 	}
+				else if(joystick_left.left()) 	{ positionLeft = "left"; 	}
+				else if(joystick_left.right()) 	{ positionLeft = "right"; 	}
+
+				if(joystick_right.up()) 		{ positionRight = "up";		}
+				else if(joystick_right.down()) 	{ positionRight = "down";	}
+				else if(joystick_right.left()) 	{ positionRight = "left"; 	}
+				else if(joystick_right.right()) { positionRight = "right";	}
+			}, 20);
+
+
+		</script>
+	</body>
+</html>

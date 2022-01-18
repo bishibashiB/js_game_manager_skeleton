@@ -1,0 +1,41 @@
+html, body{
+    margin: 0 auto;
+    padding: 0 auto;
+}
+
+.borderdiv{
+    float:left;
+    display: block;
+    width:5%;
+    height:1000px;
+    min-height:1000px;
+    background:#1d293f;
+}
+
+#centerdiv{
+    float:left;
+    width:90%;
+    margin-top:1em;
+    background: #FFF;
+}
+
+#quarderdiv{
+    float:left;
+    width:60%;
+    margin-left:20%;
+}
+.quarder_row{
+    min-width:640px;
+    width:640px;
+    max-width:640px;
+    margin: 0px;
+}
+
+.quarder{
+    min-width: 40px;
+    min-height: 40px;
+    width: 40px;
+    height: 40px;
+    background: #000;
+    float:left;
+}
