@@ -16,11 +16,6 @@ const SerialCmd = {
 }
 
 
-class SerialCmdArgs {
-    cmd;
-    args;
-}
-
 function getBinarySize(string) {
     return Buffer.byteLength(string, 'utf8');
 }
